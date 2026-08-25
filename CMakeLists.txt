@@ -16,6 +16,11 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(JUCE)
 
+juce_add_binary_data(GammaEngineAssets
+    SOURCES
+        Resources/Piano/GPiano_sus_C4_v4_rr1_Player.flac
+)
+
 juce_add_gui_app(GammaEngine
     PRODUCT_NAME "Gamma Engine"
     COMPANY_NAME "Gamma Engine"
@@ -49,6 +54,7 @@ target_compile_definitions(GammaEngine
 
 target_link_libraries(GammaEngine
     PRIVATE
+        GammaEngineAssets
         juce::juce_audio_utils
         juce::juce_dsp
         juce::juce_gui_extra
