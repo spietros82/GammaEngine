@@ -12,22 +12,30 @@ void PianoEngine::prepare(double sampleRate)
     synthesiser.setCurrentPlaybackSampleRate(sampleRate);
 }
 
+void PianoEngine::clearSamples()
+{
+    synthesiser.clearSounds();
+}
+
 bool PianoEngine::installReader(
-    std::unique_ptr<juce::AudioFormatReader> reader)
+    std::unique_ptr<juce::AudioFormatReader> reader,
+    int rootMidiNote,
+    int lowMidiNote,
+    int highMidiNote,
+    const juce::String& name)
 {
     if (reader == nullptr)
         return false;
 
-    synthesiser.clearSounds();
-
     juce::BigInteger notes;
-    notes.setRange(0, 128, true);
-
-    constexpr int rootMidiNote = 60;
+    notes.setRange(
+        lowMidiNote,
+        highMidiNote - lowMidiNote + 1,
+        true);
 
     synthesiser.addSound(
         new juce::SamplerSound(
-            "Piano",
+            name,
             *reader,
             notes,
             rootMidiNote,
@@ -40,14 +48,39 @@ bool PianoEngine::installReader(
 
 bool PianoEngine::loadSample(const juce::File& sampleFile)
 {
+    clearSamples();
+
     return installReader(
         std::unique_ptr<juce::AudioFormatReader>(
-            formatManager.createReaderFor(sampleFile)));
+            formatManager.createReaderFor(sampleFile)),
+        60,
+        0,
+        127,
+        "Piano");
 }
 
 bool PianoEngine::loadSampleFromMemory(
     const void* data,
     size_t dataSize)
+{
+    clearSamples();
+
+    return addSampleFromMemory(
+        data,
+        dataSize,
+        60,
+        0,
+        127,
+        "Piano");
+}
+
+bool PianoEngine::addSampleFromMemory(
+    const void* data,
+    size_t dataSize,
+    int rootMidiNote,
+    int lowMidiNote,
+    int highMidiNote,
+    const juce::String& name)
 {
     auto stream = std::make_unique<juce::MemoryInputStream>(
         data,
@@ -57,7 +90,12 @@ bool PianoEngine::loadSampleFromMemory(
     std::unique_ptr<juce::AudioFormatReader> reader(
         formatManager.createReaderFor(std::move(stream)));
 
-    return installReader(std::move(reader));
+    return installReader(
+        std::move(reader),
+        rootMidiNote,
+        lowMidiNote,
+        highMidiNote,
+        name);
 }
 
 void PianoEngine::noteOn(int midiNote, float velocity)
