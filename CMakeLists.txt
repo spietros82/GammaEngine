@@ -18,38 +18,38 @@ FetchContent_MakeAvailable(JUCE)
 
 juce_add_binary_data(GammaEngineAssets
     SOURCES
-        Resources/Piano/GPiano_sus_C3_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_C3_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_C3_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_C3_v4_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E3_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E3_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E3_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E3_v4_rr1_Player.flac
-        Resources/Piano/GPiano_sus_F#3_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_F#3_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_F#3_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_F#3_v4_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#3_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#3_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#3_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#3_v4_rr1_Player.flac
-        Resources/Piano/GPiano_sus_A#3_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_A#3_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_A#3_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_A#3_v4_rr1_Player.flac
-        Resources/Piano/GPiano_sus_C4_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_C4_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_C4_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_C4_v4_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E4_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E4_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E4_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_E4_v4_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#4_v1_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#4_v2_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#4_v3_rr1_Player.flac
-        Resources/Piano/GPiano_sus_G#4_v4_rr1_Player.flac
+        "Resources/Piano/GPiano_sus_C3_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_C3_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_C3_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_C3_v4_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E3_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E3_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E3_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E3_v4_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_F#3_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_F#3_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_F#3_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_F#3_v4_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#3_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#3_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#3_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#3_v4_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_A#3_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_A#3_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_A#3_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_A#3_v4_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_C4_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_C4_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_C4_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_C4_v4_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E4_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E4_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E4_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_E4_v4_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#4_v1_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#4_v2_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#4_v3_rr1_Player.flac"
+        "Resources/Piano/GPiano_sus_G#4_v4_rr1_Player.flac"
 )
 
 juce_add_gui_app(GammaEngine
