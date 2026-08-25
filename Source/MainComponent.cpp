@@ -1,4 +1,5 @@
 #include "MainComponent.h"
+#include "BinaryData.h"
 
 MainComponent::MainComponent()
 {
@@ -74,7 +75,7 @@ MainComponent::~MainComponent()
 }
 
 void MainComponent::prepareToPlay(
-    int,
+    int samplesPerBlockExpected,
     double sampleRate)
 {
     displaySampleRate = sampleRate;
@@ -82,6 +83,22 @@ void MainComponent::prepareToPlay(
     gammaEngine.prepare(sampleRate);
     musicEngine.prepare(sampleRate);
     pianoEngine.prepare(sampleRate);
+
+    pianoBuffer.setSize(
+        2,
+        juce::jmax(1, samplesPerBlockExpected),
+        false,
+        false,
+        true);
+
+    const bool pianoLoaded =
+        pianoEngine.loadSampleFromMemory(
+            BinaryData::GPiano_sus_C4_v4_rr1_Player_flac,
+            static_cast<size_t>(
+                BinaryData::GPiano_sus_C4_v4_rr1_Player_flacSize));
+
+    if (pianoLoaded)
+        pianoEngine.noteOn(60, 0.7f);
 
     musicEngine.setEnergy(
         energySlider.getValue() / 100.0);
@@ -105,13 +122,46 @@ void MainComponent::getNextAudioBlock(
         bufferToFill.startSample,
         bufferToFill.numSamples);
 
+    if (pianoBuffer.getNumSamples() < bufferToFill.numSamples)
+        pianoBuffer.setSize(
+            2,
+            bufferToFill.numSamples,
+            false,
+            false,
+            true);
+
+    pianoBuffer.clear();
+    pianoEngine.renderNextBlock(
+        pianoBuffer,
+        0,
+        bufferToFill.numSamples);
+
     for (int i = 0; i < bufferToFill.numSamples; ++i)
     {
         const float musicSample =
             musicEngine.getNextSample();
 
+        float pianoSample = 0.0f;
+
+        if (pianoBuffer.getNumChannels() >= 2)
+        {
+            pianoSample =
+                0.5f * (
+                    pianoBuffer.getSample(0, i)
+                    + pianoBuffer.getSample(1, i));
+        }
+        else if (pianoBuffer.getNumChannels() == 1)
+        {
+            pianoSample =
+                pianoBuffer.getSample(0, i);
+        }
+
+        const float mixedSample =
+            musicSample * 0.65f
+            + pianoSample * 0.50f;
+
         const float outputSample =
-            gammaEngine.processSample(musicSample);
+            gammaEngine.processSample(mixedSample);
 
         const int sampleIndex =
             bufferToFill.startSample + i;
