@@ -30,6 +30,7 @@ private:
     GammaEngine gammaEngine;
     MusicEngine musicEngine;
     PianoEngine pianoEngine;
+    juce::AudioBuffer<float> pianoBuffer;
 
     juce::Slider energySlider;
     juce::Label energyLabel;
