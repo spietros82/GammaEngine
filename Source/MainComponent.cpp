@@ -91,14 +91,17 @@ void MainComponent::prepareToPlay(
         false,
         true);
 
-    const bool pianoLoaded =
+    pianoLoaded =
         pianoEngine.loadSampleFromMemory(
             BinaryData::GPiano_sus_C4_v4_rr1_Player_flac,
             static_cast<size_t>(
                 BinaryData::GPiano_sus_C4_v4_rr1_Player_flacSize));
 
+    lastPianoChord = -1;
+    activePianoNotes = { -1, -1, -1 };
+
     if (pianoLoaded)
-        pianoEngine.noteOn(60, 0.7f);
+        setPianoChord(musicEngine.getCurrentChord());
 
     musicEngine.setEnergy(
         energySlider.getValue() / 100.0);
@@ -108,6 +111,46 @@ void MainComponent::prepareToPlay(
 
     gammaEngine.setModulationDepth(
         depthSlider.getValue() / 100.0);
+}
+
+void MainComponent::setPianoChord(int chordIndex)
+{
+    if (! pianoLoaded || chordIndex == lastPianoChord)
+        return;
+
+    for (const int note : activePianoNotes)
+    {
+        if (note >= 0)
+            pianoEngine.noteOff(note);
+    }
+
+    switch (chordIndex)
+    {
+        case 0: // Am
+            activePianoNotes = { 57, 60, 64 }; // A3 C4 E4
+            break;
+
+        case 1: // F
+            activePianoNotes = { 53, 57, 60 }; // F3 A3 C4
+            break;
+
+        case 2: // C
+            activePianoNotes = { 60, 64, 67 }; // C4 E4 G4
+            break;
+
+        case 3: // G
+            activePianoNotes = { 55, 59, 62 }; // G3 B3 D4
+            break;
+
+        default:
+            activePianoNotes = { 60, 64, 67 };
+            break;
+    }
+
+    for (const int note : activePianoNotes)
+        pianoEngine.noteOn(note, 0.42f);
+
+    lastPianoChord = chordIndex;
 }
 
 void MainComponent::getNextAudioBlock(
@@ -121,6 +164,9 @@ void MainComponent::getNextAudioBlock(
     buffer->clear(
         bufferToFill.startSample,
         bufferToFill.numSamples);
+
+    if (pianoLoaded)
+        setPianoChord(musicEngine.getCurrentChord());
 
     if (pianoBuffer.getNumSamples() < bufferToFill.numSamples)
         pianoBuffer.setSize(
@@ -158,7 +204,7 @@ void MainComponent::getNextAudioBlock(
 
         const float mixedSample =
             musicSample * 0.65f
-            + pianoSample * 0.50f;
+            + pianoSample * 0.42f;
 
         const float outputSample =
             gammaEngine.processSample(mixedSample);
