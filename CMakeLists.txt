@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(JUCE)
 juce_add_gui_app(GammaEngine
     PRODUCT_NAME "Gamma Engine"
     COMPANY_NAME "Gamma Engine"
+    BUNDLE_ID "com.gammaengine.app"
 )
 
 juce_generate_juce_header(GammaEngine)
