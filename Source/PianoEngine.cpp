@@ -12,15 +12,13 @@ void PianoEngine::prepare(double sampleRate)
     synthesiser.setCurrentPlaybackSampleRate(sampleRate);
 }
 
-bool PianoEngine::loadSample(const juce::File& sampleFile)
+bool PianoEngine::installReader(
+    std::unique_ptr<juce::AudioFormatReader> reader)
 {
-    synthesiser.clearSounds();
-
-    std::unique_ptr<juce::AudioFormatReader> reader(
-        formatManager.createReaderFor(sampleFile));
-
     if (reader == nullptr)
         return false;
+
+    synthesiser.clearSounds();
 
     juce::BigInteger notes;
     notes.setRange(0, 128, true);
@@ -38,6 +36,27 @@ bool PianoEngine::loadSample(const juce::File& sampleFile)
             10.0));
 
     return true;
+}
+
+bool PianoEngine::loadSample(const juce::File& sampleFile)
+{
+    return installReader(
+        std::unique_ptr<juce::AudioFormatReader>(
+            formatManager.createReaderFor(sampleFile)));
+}
+
+bool PianoEngine::loadSampleFromMemory(
+    const void* data,
+    size_t dataSize)
+{
+    auto stream = std::make_unique<juce::MemoryInputStream>(
+        data,
+        dataSize,
+        false);
+
+    auto reader = formatManager.createReaderFor(std::move(stream));
+
+    return installReader(std::move(reader));
 }
 
 void PianoEngine::noteOn(int midiNote, float velocity)
