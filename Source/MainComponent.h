@@ -26,11 +26,16 @@ private:
     void pushSample(float sample);
     void drawOscilloscope(juce::Graphics& g);
     void drawSpectrum(juce::Graphics& g);
+    void setPianoChord(int chordIndex);
 
     GammaEngine gammaEngine;
     MusicEngine musicEngine;
     PianoEngine pianoEngine;
     juce::AudioBuffer<float> pianoBuffer;
+
+    bool pianoLoaded = false;
+    int lastPianoChord = -1;
+    std::array<int, 3> activePianoNotes { -1, -1, -1 };
 
     juce::Slider energySlider;
     juce::Label energyLabel;
