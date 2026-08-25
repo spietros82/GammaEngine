@@ -54,7 +54,8 @@ bool PianoEngine::loadSampleFromMemory(
         dataSize,
         false);
 
-    auto reader = formatManager.createReaderFor(std::move(stream));
+    std::unique_ptr<juce::AudioFormatReader> reader(
+        formatManager.createReaderFor(std::move(stream)));
 
     return installReader(std::move(reader));
 }
