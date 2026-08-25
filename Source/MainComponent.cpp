@@ -91,11 +91,65 @@ void MainComponent::prepareToPlay(
         false,
         true);
 
-    pianoLoaded =
-        pianoEngine.loadSampleFromMemory(
-            BinaryData::GPiano_sus_C4_v4_rr1_Player_flac,
-            static_cast<size_t>(
-                BinaryData::GPiano_sus_C4_v4_rr1_Player_flacSize));
+    pianoEngine.clearSamples();
+
+    auto addBundledPianoSample = [this](
+        const char* resourceName,
+        int rootMidiNote,
+        int lowMidiNote,
+        int highMidiNote,
+        const juce::String& sampleName)
+    {
+        int dataSize = 0;
+        const auto* data = BinaryData::getNamedResource(
+            resourceName,
+            dataSize);
+
+        if (data == nullptr || dataSize <= 0)
+            return false;
+
+        return pianoEngine.addSampleFromMemory(
+            data,
+            static_cast<size_t>(dataSize),
+            rootMidiNote,
+            lowMidiNote,
+            highMidiNote,
+            sampleName);
+    };
+
+    pianoLoaded = true;
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_C3_v4_rr1_Player_flac",
+        48, 0, 50, "Piano C3");
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_E3_v4_rr1_Player_flac",
+        52, 51, 53, "Piano E3");
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_F_3_v4_rr1_Player_flac",
+        54, 54, 55, "Piano F#3");
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_G_3_v4_rr1_Player_flac",
+        56, 56, 57, "Piano G#3");
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_A_3_v4_rr1_Player_flac",
+        58, 58, 59, "Piano A#3");
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_C4_v4_rr1_Player_flac",
+        60, 60, 62, "Piano C4");
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_E4_v4_rr1_Player_flac",
+        64, 63, 66, "Piano E4");
+
+    pianoLoaded &= addBundledPianoSample(
+        "GPiano_sus_G_4_v4_rr1_Player_flac",
+        68, 67, 127, "Piano G#4");
 
     lastPianoChord = -1;
     activePianoNotes = { -1, -1, -1 };
