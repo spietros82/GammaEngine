@@ -13,6 +13,11 @@ public:
     float getNextSample();
     void setEnergy(double energy);
 
+    int getCurrentChord() const noexcept
+    {
+        return currentChord;
+    }
+
 private:
     void advanceChord();
 
