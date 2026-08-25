@@ -6,6 +6,8 @@
 class Conductor
 {
 public:
+    Conductor() = default;
+
     struct Decision
     {
         int chordIndex = 0;
@@ -15,14 +17,18 @@ public:
     };
 
     void setEnergy(double newEnergy);
-    Decision getNextDecision(int currentChord);
+
+    Decision getNextDecision(
+        int currentChord);
 
 private:
-    int chooseNextChord(int currentChord);
-    double chooseDuration(double currentEnergy);
+    int chooseNextChord(
+        int currentChord);
+
+    double chooseDuration(
+        double currentEnergy);
 
     std::atomic<double> energy { 0.5 };
-    juce::Random random;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(Conductor)
 };
