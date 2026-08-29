@@ -5,6 +5,7 @@
 #include "GammaEngine.h"
 #include "MusicEngine.h"
 #include "PianoEngine.h"
+#include "PianoPerformer.h"
 
 class MainComponent final
     : public juce::AudioAppComponent,
@@ -26,17 +27,14 @@ private:
     void pushSample(float sample);
     void drawOscilloscope(juce::Graphics& g);
     void drawSpectrum(juce::Graphics& g);
-    void setPianoChord(int chordIndex);
 
     GammaEngine gammaEngine;
     MusicEngine musicEngine;
     PianoEngine pianoEngine;
+    PianoPerformer pianoPerformer { pianoEngine };
     juce::AudioBuffer<float> pianoBuffer;
 
     bool pianoLoaded = false;
-    int lastPianoChord = -1;
-    int pianoVoicingStep = 0;
-    std::array<int, 3> activePianoNotes { -1, -1, -1 };
 
     juce::Slider energySlider;
     juce::Label energyLabel;
