@@ -26,6 +26,13 @@ public:
     Gesture getLastGesture() const noexcept { return lastGesture; }
 
 private:
+    enum class PhraseShape
+    {
+        Rise,
+        Fall,
+        Arch
+    };
+
     struct ScheduledNote
     {
         int midiNote = -1;
@@ -44,6 +51,16 @@ private:
     Gesture lastGesture = Gesture::Chord;
     int consecutiveRests = 0;
 
+    static constexpr int gestureHistorySize = 6;
+    std::array<Gesture, gestureHistorySize> gestureHistory {};
+    int gestureHistoryCount = 0;
+
+    int phrasePosition = 0;
+    int phraseLength = 5;
+    PhraseShape phraseShape = PhraseShape::Arch;
+    std::array<int, 3> previousVoicing { 60, 64, 67 };
+    bool hasPreviousVoicing = false;
+
     std::array<int, 4> activeNotes { -1, -1, -1, -1 };
     std::array<ScheduledNote, 4> scheduledNotes {};
 
@@ -53,6 +70,12 @@ private:
     void stopActiveNotes();
     void clearSchedule();
     void triggerNote(int midiNote, float velocity);
+
+    void startNewPhrase();
+    void advancePhrase();
+    void rememberGesture(Gesture gesture);
+    int countRecentGesture(Gesture gesture, int lookBack) const;
+    float getPhraseIntensity() const;
 
     int millisecondsToSamples(double milliseconds) const;
     float makeVelocity();
