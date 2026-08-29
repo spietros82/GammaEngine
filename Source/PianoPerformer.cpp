@@ -1,5 +1,8 @@
 #include "PianoPerformer.h"
 
+#include <algorithm>
+#include <cmath>
+
 PianoPerformer::PianoPerformer(PianoEngine& engine)
     : pianoEngine(engine),
       random(static_cast<int64>(juce::Time::getMillisecondCounterHiRes()))
@@ -16,12 +19,16 @@ void PianoPerformer::reset()
 {
     stopActiveNotes();
     clearSchedule();
+
     currentChord = -1;
+    samplesUntilNextGesture = 0;
+    lastMelodicNote = -1;
     lastGesture = Gesture::Chord;
     consecutiveRests = 0;
+
     gestureHistory.fill(Gesture::Rest);
     gestureHistoryCount = 0;
-    hasPreviousVoicing = false;
+
     startNewPhrase();
 }
 
@@ -40,28 +47,26 @@ void PianoPerformer::onChordChanged(int chordIndex)
     stopActiveNotes();
     clearSchedule();
 
-    const auto gesture = chooseGesture();
-    const auto notes = chooseVoicing(chordIndex);
-
-    scheduleGesture(gesture, notes);
-
-    lastGesture = gesture;
-    rememberGesture(gesture);
-
-    if (gesture == Gesture::Rest)
-        ++consecutiveRests;
-    else
-        consecutiveRests = 0;
-
-    previousVoicing = notes;
-    hasPreviousVoicing = true;
-    advancePhrase();
+    // A harmonic change is itself a performance opportunity, but after this
+    // the pianist runs on an independent clock while the chord can remain held.
+    beginGesture(true);
+    scheduleNextGestureTime();
 }
 
 void PianoPerformer::processBlock(int numSamples)
 {
-    if (numSamples <= 0)
+    if (numSamples <= 0 || currentChord < 0)
         return;
+
+    samplesUntilNextGesture -= numSamples;
+
+    if (samplesUntilNextGesture <= 0)
+    {
+        stopActiveNotes();
+        clearSchedule();
+        beginGesture(false);
+        scheduleNextGestureTime();
+    }
 
     for (auto& note : scheduledNotes)
     {
@@ -80,132 +85,254 @@ void PianoPerformer::processBlock(int numSamples)
     }
 }
 
+void PianoPerformer::beginGesture(bool harmonicChange)
+{
+    auto gesture = chooseGesture();
+
+    // On a fresh harmony, avoid opening with too many empty events.
+    if (harmonicChange && gesture == Gesture::Rest && random.nextFloat() < 0.65f)
+        gesture = energy < 0.35f ? Gesture::Single : Gesture::Dyad;
+
+    const auto notes = chooseNotesForGesture(gesture);
+    scheduleGesture(gesture, notes);
+
+    lastGesture = gesture;
+    rememberGesture(gesture);
+
+    if (gesture == Gesture::Rest)
+        ++consecutiveRests;
+    else
+        consecutiveRests = 0;
+
+    advancePhrase();
+}
+
+void PianoPerformer::scheduleNextGestureTime()
+{
+    // This is independent from harmonic duration. Low energy breathes for longer;
+    // high energy creates several possible piano events within one chord.
+    const double baseSeconds = juce::jmap(
+        static_cast<double>(energy),
+        0.0,
+        1.0,
+        7.5,
+        1.7);
+
+    const double variationSeconds = juce::jmap(
+        static_cast<double>(energy),
+        0.0,
+        1.0,
+        3.0,
+        1.8);
+
+    double seconds = baseSeconds + random.nextDouble() * variationSeconds;
+
+    // Phrase peaks become slightly more active without becoming metronomic.
+    seconds *= juce::jmap(
+        static_cast<double>(getPhraseIntensity()),
+        0.0,
+        1.0,
+        1.15,
+        0.82);
+
+    samplesUntilNextGesture = juce::jmax(
+        1,
+        static_cast<int>(std::round(seconds * currentSampleRate)));
+}
+
 PianoPerformer::Gesture PianoPerformer::chooseGesture()
 {
-    float restWeight = juce::jmap(energy, 0.0f, 1.0f, 0.34f, 0.05f);
-    float chordWeight = juce::jmap(energy, 0.0f, 1.0f, 0.46f, 0.32f);
-    float arpeggioWeight = juce::jmap(energy, 0.0f, 1.0f, 0.20f, 0.63f);
+    float restWeight = juce::jmap(energy, 0.0f, 1.0f, 0.30f, 0.05f);
+    float singleWeight = juce::jmap(energy, 0.0f, 1.0f, 0.34f, 0.12f);
+    float dyadWeight = juce::jmap(energy, 0.0f, 1.0f, 0.22f, 0.23f);
+    float chordWeight = juce::jmap(energy, 0.0f, 1.0f, 0.10f, 0.25f);
+    float arpeggioWeight = juce::jmap(energy, 0.0f, 1.0f, 0.04f, 0.35f);
 
     const float phraseIntensity = getPhraseIntensity();
 
-    // The phrase shape biases motion over several harmonic changes.
-    arpeggioWeight *= juce::jmap(phraseIntensity, 0.0f, 1.0f, 0.72f, 1.35f);
-    chordWeight *= juce::jmap(phraseIntensity, 0.0f, 1.0f, 1.18f, 0.88f);
-    restWeight *= juce::jmap(phraseIntensity, 0.0f, 1.0f, 1.25f, 0.55f);
+    restWeight *= juce::jmap(phraseIntensity, 0.0f, 1.0f, 1.20f, 0.55f);
+    singleWeight *= juce::jmap(phraseIntensity, 0.0f, 1.0f, 1.15f, 0.85f);
+    arpeggioWeight *= juce::jmap(phraseIntensity, 0.0f, 1.0f, 0.70f, 1.35f);
 
-    // Phrase openings tend to establish space. Endings tend to resolve.
-    if (phrasePosition == 0)
-    {
-        chordWeight *= 1.18f;
-        restWeight *= 1.10f;
-        arpeggioWeight *= 0.72f;
-    }
-
-    if (phrasePosition == phraseLength - 1)
-    {
-        chordWeight *= 1.55f;
-        arpeggioWeight *= 0.60f;
-        restWeight *= 0.48f;
-    }
-
-    // Avoid obvious local repetition.
     if (lastGesture == Gesture::Rest)
-        restWeight *= 0.08f;
-
-    if (lastGesture == Gesture::Arpeggio)
-        arpeggioWeight *= 0.62f;
-
+        restWeight *= 0.05f;
+    if (lastGesture == Gesture::Single)
+        singleWeight *= 0.62f;
+    if (lastGesture == Gesture::Dyad)
+        dyadWeight *= 0.68f;
     if (lastGesture == Gesture::Chord)
-        chordWeight *= 0.78f;
+        chordWeight *= 0.65f;
+    if (lastGesture == Gesture::Arpeggio)
+        arpeggioWeight *= 0.48f;
 
-    // Memory over several gestures: too many of one type pushes the performer away from it.
-    if (countRecentGesture(Gesture::Arpeggio, 3) >= 2)
-        arpeggioWeight *= 0.45f;
-
-    if (countRecentGesture(Gesture::Chord, 3) >= 2)
-        chordWeight *= 0.60f;
+    if (countRecentGesture(Gesture::Arpeggio, 4) >= 2)
+        arpeggioWeight *= 0.35f;
+    if (countRecentGesture(Gesture::Chord, 4) >= 2)
+        chordWeight *= 0.45f;
+    if (countRecentGesture(Gesture::Single, 4) >= 2)
+        singleWeight *= 0.55f;
 
     if (consecutiveRests >= 1)
         restWeight = 0.0f;
 
-    const float total = restWeight + chordWeight + arpeggioWeight;
-    const float roll = random.nextFloat() * total;
+    const float total =
+        restWeight + singleWeight + dyadWeight + chordWeight + arpeggioWeight;
 
-    if (roll < restWeight)
+    const float roll = random.nextFloat() * total;
+    float threshold = restWeight;
+
+    if (roll < threshold)
         return Gesture::Rest;
 
-    if (roll < restWeight + chordWeight)
+    threshold += singleWeight;
+    if (roll < threshold)
+        return Gesture::Single;
+
+    threshold += dyadWeight;
+    if (roll < threshold)
+        return Gesture::Dyad;
+
+    threshold += chordWeight;
+    if (roll < threshold)
         return Gesture::Chord;
 
     return Gesture::Arpeggio;
 }
 
-std::array<int, 3> PianoPerformer::chooseVoicing(int chordIndex)
+std::array<int, 3> PianoPerformer::chooseNotesForGesture(Gesture gesture)
 {
-    std::array<int, 3> lowVoicing { 60, 64, 67 };
-    std::array<int, 3> highVoicing { 60, 64, 67 };
+    std::array<int, 3> notes { 60, 64, 67 };
 
-    switch (chordIndex)
+    if (gesture == Gesture::Rest)
+        return notes;
+
+    if (gesture == Gesture::Single)
     {
-        case 0: // Am
-            lowVoicing = { 57, 60, 64 };
-            highVoicing = { 60, 64, 69 };
-            break;
-
-        case 1: // F
-            lowVoicing = { 53, 57, 60 };
-            highVoicing = { 57, 60, 65 };
-            break;
-
-        case 2: // C
-            lowVoicing = { 55, 60, 64 };
-            highVoicing = { 60, 64, 67 };
-            break;
-
-        case 3: // G
-            lowVoicing = { 55, 59, 62 };
-            highVoicing = { 59, 62, 67 };
-            break;
-
-        default:
-            break;
+        const bool preferChord = random.nextFloat() < 0.58f;
+        notes[0] = choosePaletteNote(preferChord, lastMelodicNote);
+        notes[1] = notes[0];
+        notes[2] = notes[0];
+        lastMelodicNote = notes[0];
+        return notes;
     }
 
-    const float phraseIntensity = getPhraseIntensity();
-    bool useHigh = false;
-
-    // Phrase direction nudges register, giving the ear a contour to follow.
-    switch (phraseShape)
+    if (gesture == Gesture::Dyad)
     {
-        case PhraseShape::Rise:
-            useHigh = random.nextFloat() < juce::jmap(phraseIntensity, 0.0f, 1.0f, 0.25f, 0.88f);
-            break;
+        notes[0] = choosePaletteNote(true, lastMelodicNote);
+        notes[1] = choosePaletteNote(random.nextFloat() < 0.55f, notes[0]);
 
-        case PhraseShape::Fall:
-            useHigh = random.nextFloat() < juce::jmap(phraseIntensity, 0.0f, 1.0f, 0.82f, 0.22f);
-            break;
+        if (notes[1] < notes[0])
+            std::swap(notes[0], notes[1]);
 
-        case PhraseShape::Arch:
-            useHigh = random.nextFloat() < juce::jmap(phraseIntensity, 0.0f, 1.0f, 0.30f, 0.82f);
-            break;
+        if (notes[1] - notes[0] > 12)
+            notes[1] -= 12;
+
+        notes[2] = notes[1];
+        lastMelodicNote = notes[1];
+        return notes;
     }
 
-    auto notes = useHigh ? highVoicing : lowVoicing;
+    // Chords and arpeggios still honour the harmony, but no longer use only two
+    // hard-coded shapes. We build three notes from the current palette and allow
+    // one colour tone when the gesture is an arpeggio.
+    notes[0] = choosePaletteNote(true, lastMelodicNote);
+    notes[1] = choosePaletteNote(true, notes[0]);
+    notes[2] = choosePaletteNote(
+        gesture == Gesture::Chord || random.nextFloat() < 0.68f,
+        notes[1]);
 
-    // Avoid an identical register choice if the previous voicing already had the same top note.
-    if (hasPreviousVoicing && notes[2] == previousVoicing[2] && random.nextFloat() < 0.62f)
-        notes = useHigh ? lowVoicing : highVoicing;
+    std::sort(notes.begin(), notes.end());
 
-    // At energetic phrase peaks, occasionally widen the top voice by an octave.
-    const bool wider =
-        energy > 0.62f
-        && phraseIntensity > 0.58f
-        && random.nextFloat() < 0.28f;
+    for (size_t i = 1; i < notes.size(); ++i)
+    {
+        while (notes[i] <= notes[i - 1])
+            notes[i] += 12;
+    }
 
-    if (wider)
+    // Keep the generated shape inside a comfortable piano register.
+    while (notes[2] > 81)
+    {
+        for (auto& note : notes)
+            note -= 12;
+    }
+
+    if (energy > 0.72f
+        && getPhraseIntensity() > 0.55f
+        && random.nextFloat() < 0.22f)
+    {
         notes[2] += 12;
+    }
 
+    lastMelodicNote = notes[2];
     return notes;
+}
+
+int PianoPerformer::choosePaletteNote(bool preferChordTone, int avoidNote)
+{
+    constexpr int lowMidi = 45;   // A2
+    constexpr int highMidi = 76;  // E5
+
+    std::array<int, 40> candidates {};
+    int count = 0;
+
+    for (int midi = lowMidi; midi <= highMidi; ++midi)
+    {
+        const bool acceptable = preferChordTone
+            ? isChordTone(midi)
+            : isScaleTone(midi);
+
+        if (! acceptable)
+            continue;
+
+        if (midi == avoidNote && random.nextFloat() < 0.85f)
+            continue;
+
+        candidates[static_cast<size_t>(count++)] = midi;
+    }
+
+    if (count <= 0)
+        return 60;
+
+    int chosen = candidates[static_cast<size_t>(random.nextInt(count))];
+
+    // Phrase contour gently biases register rather than forcing a fixed voicing.
+    const float intensity = getPhraseIntensity();
+
+    if (phraseShape == PhraseShape::Rise && intensity > 0.55f && chosen < 60)
+        chosen += 12;
+    else if (phraseShape == PhraseShape::Fall && intensity < 0.45f && chosen > 64)
+        chosen -= 12;
+    else if (phraseShape == PhraseShape::Arch && intensity > 0.60f && chosen < 57)
+        chosen += 12;
+
+    return juce::jlimit(lowMidi, 81, chosen);
+}
+
+bool PianoPerformer::isChordTone(int midiNote) const
+{
+    const int pc = ((midiNote % 12) + 12) % 12;
+
+    switch (currentChord)
+    {
+        case 0: // Am: A C E
+            return pc == 9 || pc == 0 || pc == 4;
+        case 1: // F: F A C
+            return pc == 5 || pc == 9 || pc == 0;
+        case 2: // C: C E G
+            return pc == 0 || pc == 4 || pc == 7;
+        case 3: // G: G B D
+            return pc == 7 || pc == 11 || pc == 2;
+        default:
+            return pc == 0 || pc == 4 || pc == 7;
+    }
+}
+
+bool PianoPerformer::isScaleTone(int midiNote) const
+{
+    // A natural minor / C major pitch collection: A B C D E F G.
+    const int pc = ((midiNote % 12) + 12) % 12;
+    return pc == 9 || pc == 11 || pc == 0 || pc == 2
+        || pc == 4 || pc == 5 || pc == 7;
 }
 
 void PianoPerformer::scheduleGesture(
@@ -215,25 +342,41 @@ void PianoPerformer::scheduleGesture(
     if (gesture == Gesture::Rest)
         return;
 
-    const float phraseIntensity = getPhraseIntensity();
+    if (gesture == Gesture::Single)
+    {
+        scheduledNotes[0] = {
+            notes[0],
+            0,
+            makeVelocity(),
+            true
+        };
+        return;
+    }
+
+    if (gesture == Gesture::Dyad)
+    {
+        const double spreadMs = 35.0 + random.nextDouble() * 180.0;
+
+        scheduledNotes[0] = { notes[0], 0, makeVelocity(), true };
+        scheduledNotes[1] = {
+            notes[1],
+            millisecondsToSamples(spreadMs),
+            makeVelocity(),
+            true
+        };
+        return;
+    }
 
     if (gesture == Gesture::Chord)
     {
-        const double baseSpreadMs = juce::jmap(
+        const double maxSpreadMs = juce::jmap(
             static_cast<double>(energy),
             0.0,
             1.0,
-            180.0,
-            35.0);
+            220.0,
+            45.0);
 
-        const double phraseFactor = juce::jmap(
-            static_cast<double>(phraseIntensity),
-            0.0,
-            1.0,
-            1.25,
-            0.72);
-
-        const double spreadMs = random.nextDouble() * baseSpreadMs * phraseFactor;
+        const double spreadMs = random.nextDouble() * maxSpreadMs;
 
         for (size_t i = 0; i < notes.size(); ++i)
         {
@@ -244,7 +387,6 @@ void PianoPerformer::scheduleGesture(
                 true
             };
         }
-
         return;
     }
 
@@ -252,32 +394,24 @@ void PianoPerformer::scheduleGesture(
         static_cast<double>(energy),
         0.0,
         1.0,
-        260.0,
-        70.0);
+        330.0,
+        80.0);
 
     const double variationMs = juce::jmap(
         static_cast<double>(energy),
         0.0,
         1.0,
-        260.0,
-        110.0);
+        280.0,
+        150.0);
 
-    const double phraseSpeed = juce::jmap(
-        static_cast<double>(phraseIntensity),
-        0.0,
-        1.0,
-        1.18,
-        0.78);
+    const double stepMs = minStepMs + random.nextDouble() * variationMs;
 
-    const double stepMs =
-        (minStepMs + random.nextDouble() * variationMs) * phraseSpeed;
-
-    bool descending = random.nextFloat() < 0.28f;
+    bool descending = random.nextBool();
 
     if (phraseShape == PhraseShape::Rise)
-        descending = random.nextFloat() < 0.12f;
+        descending = random.nextFloat() < 0.18f;
     else if (phraseShape == PhraseShape::Fall)
-        descending = random.nextFloat() < 0.72f;
+        descending = random.nextFloat() < 0.76f;
 
     for (size_t i = 0; i < notes.size(); ++i)
     {
@@ -331,7 +465,7 @@ void PianoPerformer::triggerNote(int midiNote, float velocity)
 void PianoPerformer::startNewPhrase()
 {
     phrasePosition = 0;
-    phraseLength = 4 + random.nextInt(3); // 4, 5 or 6 harmonic changes.
+    phraseLength = 5 + random.nextInt(4); // 5 to 8 performance gestures.
 
     switch (random.nextInt(3))
     {
@@ -358,20 +492,21 @@ void PianoPerformer::advancePhrase()
 void PianoPerformer::rememberGesture(Gesture gesture)
 {
     for (int i = gestureHistorySize - 1; i > 0; --i)
-        gestureHistory[static_cast<size_t>(i)] = gestureHistory[static_cast<size_t>(i - 1)];
+        gestureHistory[static_cast<size_t>(i)] =
+            gestureHistory[static_cast<size_t>(i - 1)];
 
     gestureHistory[0] = gesture;
-    gestureHistoryCount = juce::jmin(gestureHistoryCount + 1, gestureHistorySize);
+    gestureHistoryCount = juce::jmin(
+        gestureHistoryCount + 1,
+        gestureHistorySize);
 }
 
 int PianoPerformer::countRecentGesture(Gesture gesture, int lookBack) const
 {
-    const int count =
-        juce::jmin(
-            lookBack,
-            juce::jmin(
-                gestureHistoryCount,
-                gestureHistorySize));
+    const int count = juce::jmin(
+        lookBack,
+        juce::jmin(gestureHistoryCount, gestureHistorySize));
+
     int matches = 0;
 
     for (int i = 0; i < count; ++i)
@@ -398,10 +533,8 @@ float PianoPerformer::getPhraseIntensity() const
     {
         case PhraseShape::Rise:
             return position;
-
         case PhraseShape::Fall:
             return 1.0f - position;
-
         case PhraseShape::Arch:
             return 1.0f - std::abs(position * 2.0f - 1.0f);
     }
@@ -418,8 +551,8 @@ int PianoPerformer::millisecondsToSamples(double milliseconds) const
 float PianoPerformer::makeVelocity()
 {
     const float phraseIntensity = getPhraseIntensity();
-    const float base = 0.28f + energy * 0.20f + phraseIntensity * 0.07f;
-    const float humanVariation = (random.nextFloat() - 0.5f) * 0.08f;
+    const float base = 0.27f + energy * 0.20f + phraseIntensity * 0.08f;
+    const float humanVariation = (random.nextFloat() - 0.5f) * 0.10f;
 
-    return juce::jlimit(0.20f, 0.64f, base + humanVariation);
+    return juce::jlimit(0.18f, 0.66f, base + humanVariation);
 }
