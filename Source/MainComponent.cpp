@@ -268,8 +268,8 @@ void MainComponent::getNextAudioBlock(
         }
 
         const float mixedSample =
-            musicSample * 0.15f
-            + pianoSample * 0.90f;
+            musicSample * 0.40f
+            + pianoSample * 0.70f;
 
         const float outputSample =
             gammaEngine.processSample(mixedSample);
