@@ -27,9 +27,30 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Upload build artifacts
+      - name: Package macOS app bundle
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          APP_PATH="$(find build/GammaEngine_artefacts -type d -name '*.app' -print -quit)"
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app bundle found"
+            exit 1
+          fi
+          echo "Packaging: $APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" GammaEngine-macOS.zip
+
+      - name: Upload macOS artifact
+        if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: GammaEngine-${{ runner.os }}
+          name: GammaEngine-macOS
+          path: GammaEngine-macOS.zip
+          if-no-files-found: error
+
+      - name: Upload Windows artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: GammaEngine-Windows
           path: build/GammaEngine_artefacts
           if-no-files-found: error
