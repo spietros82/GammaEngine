@@ -366,7 +366,12 @@ void PianoPerformer::rememberGesture(Gesture gesture)
 
 int PianoPerformer::countRecentGesture(Gesture gesture, int lookBack) const
 {
-    const int count = juce::jmin({ lookBack, gestureHistoryCount, gestureHistorySize });
+    const int count =
+        juce::jmin(
+            lookBack,
+            juce::jmin(
+                gestureHistoryCount,
+                gestureHistorySize));
     int matches = 0;
 
     for (int i = 0; i < count; ++i)
