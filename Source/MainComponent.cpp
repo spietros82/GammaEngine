@@ -160,6 +160,7 @@ void MainComponent::prepareToPlay(
     }
 
     lastPianoChord = -1;
+    pianoVoicingStep = 0;
     activePianoNotes = { -1, -1, -1 };
 
     const float initialEnergy =
@@ -189,22 +190,33 @@ void MainComponent::setPianoChord(int chordIndex)
             pianoEngine.noteOff(note);
     }
 
+    const bool alternateVoicing =
+        (pianoVoicingStep++ % 2) != 0;
+
     switch (chordIndex)
     {
         case 0: // Am
-            activePianoNotes = { 57, 60, 64 }; // A3 C4 E4
+            activePianoNotes = alternateVoicing
+                ? std::array<int, 3>{ 60, 64, 69 }   // C4 E4 A4
+                : std::array<int, 3>{ 57, 60, 64 };  // A3 C4 E4
             break;
 
         case 1: // F
-            activePianoNotes = { 53, 57, 60 }; // F3 A3 C4
+            activePianoNotes = alternateVoicing
+                ? std::array<int, 3>{ 57, 60, 65 }   // A3 C4 F4
+                : std::array<int, 3>{ 53, 57, 60 };  // F3 A3 C4
             break;
 
         case 2: // C
-            activePianoNotes = { 60, 64, 67 }; // C4 E4 G4
+            activePianoNotes = alternateVoicing
+                ? std::array<int, 3>{ 55, 60, 64 }   // G3 C4 E4
+                : std::array<int, 3>{ 60, 64, 67 };  // C4 E4 G4
             break;
 
         case 3: // G
-            activePianoNotes = { 55, 59, 62 }; // G3 B3 D4
+            activePianoNotes = alternateVoicing
+                ? std::array<int, 3>{ 59, 62, 67 }   // B3 D4 G4
+                : std::array<int, 3>{ 55, 59, 62 };  // G3 B3 D4
             break;
 
         default:

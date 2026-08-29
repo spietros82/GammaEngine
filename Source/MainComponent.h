@@ -35,6 +35,7 @@ private:
 
     bool pianoLoaded = false;
     int lastPianoChord = -1;
+    int pianoVoicingStep = 0;
     std::array<int, 3> activePianoNotes { -1, -1, -1 };
 
     juce::Slider energySlider;
