@@ -254,7 +254,7 @@ int PianoPerformer::millisecondsToSamples(double milliseconds) const
         std::round(milliseconds * 0.001 * currentSampleRate));
 }
 
-float PianoPerformer::makeVelocity() const
+float PianoPerformer::makeVelocity()
 {
     const float base = 0.30f + energy * 0.22f;
     const float humanVariation = (random.nextFloat() - 0.5f) * 0.08f;

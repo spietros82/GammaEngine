@@ -19,6 +19,7 @@ MainComponent::MainComponent()
 
         musicEngine.setEnergy(energy);
         pianoEngine.setTouch(energy);
+        pianoPerformer.setEnergy(energy);
     };
 
     energyLabel.setText(
@@ -86,6 +87,7 @@ void MainComponent::prepareToPlay(
     gammaEngine.prepare(sampleRate);
     musicEngine.prepare(sampleRate);
     pianoEngine.prepare(sampleRate);
+    pianoPerformer.prepare(sampleRate);
 
     pianoBuffer.setSize(
         2,
@@ -168,9 +170,11 @@ void MainComponent::prepareToPlay(
 
     musicEngine.setEnergy(initialEnergy);
     pianoEngine.setTouch(initialEnergy);
+    pianoPerformer.setEnergy(initialEnergy);
 
     if (pianoLoaded)
-        setPianoChord(musicEngine.getCurrentChord());
+        pianoPerformer.onChordChanged(
+            musicEngine.getCurrentChord());
 
     gammaEngine.setGammaFrequency(
         gammaSlider.getValue());
@@ -243,7 +247,13 @@ void MainComponent::getNextAudioBlock(
         bufferToFill.numSamples);
 
     if (pianoLoaded)
-        setPianoChord(musicEngine.getCurrentChord());
+    {
+        pianoPerformer.onChordChanged(
+            musicEngine.getCurrentChord());
+
+        pianoPerformer.processBlock(
+            bufferToFill.numSamples);
+    }
 
     if (pianoBuffer.getNumSamples() < bufferToFill.numSamples)
         pianoBuffer.setSize(

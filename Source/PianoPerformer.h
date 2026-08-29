@@ -55,7 +55,7 @@ private:
     void triggerNote(int midiNote, float velocity);
 
     int millisecondsToSamples(double milliseconds) const;
-    float makeVelocity() const;
+    float makeVelocity();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(PianoPerformer)
 };
