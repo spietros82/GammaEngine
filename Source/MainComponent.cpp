@@ -135,12 +135,12 @@ void MainComponent::prepareToPlay(
     {
         { "C3",  { "GPiano_sus_C3_v1_rr1_Player_flac",  "GPiano_sus_C3_v2_rr1_Player_flac",  "GPiano_sus_C3_v3_rr1_Player_flac",  "GPiano_sus_C3_v4_rr1_Player_flac"  }, 48, 0, 50 },
         { "E3",  { "GPiano_sus_E3_v1_rr1_Player_flac",  "GPiano_sus_E3_v2_rr1_Player_flac",  "GPiano_sus_E3_v3_rr1_Player_flac",  "GPiano_sus_E3_v4_rr1_Player_flac"  }, 52, 51, 53 },
-        { "F#3", { "GPiano_sus_F_3_v1_rr1_Player_flac", "GPiano_sus_F_3_v2_rr1_Player_flac", "GPiano_sus_F_3_v3_rr1_Player_flac", "GPiano_sus_F_3_v4_rr1_Player_flac" }, 54, 54, 55 },
-        { "G#3", { "GPiano_sus_G_3_v1_rr1_Player_flac", "GPiano_sus_G_3_v2_rr1_Player_flac", "GPiano_sus_G_3_v3_rr1_Player_flac", "GPiano_sus_G_3_v4_rr1_Player_flac" }, 56, 56, 57 },
-        { "A#3", { "GPiano_sus_A_3_v1_rr1_Player_flac", "GPiano_sus_A_3_v2_rr1_Player_flac", "GPiano_sus_A_3_v3_rr1_Player_flac", "GPiano_sus_A_3_v4_rr1_Player_flac" }, 58, 58, 59 },
+        { "F#3", { "GPiano_sus_F3_v1_rr1_Player_flac", "GPiano_sus_F3_v2_rr1_Player_flac", "GPiano_sus_F3_v3_rr1_Player_flac", "GPiano_sus_F3_v4_rr1_Player_flac" }, 54, 54, 55 },
+        { "G#3", { "GPiano_sus_G3_v1_rr1_Player_flac", "GPiano_sus_G3_v2_rr1_Player_flac", "GPiano_sus_G3_v3_rr1_Player_flac", "GPiano_sus_G3_v4_rr1_Player_flac" }, 56, 56, 57 },
+        { "A#3", { "GPiano_sus_A3_v1_rr1_Player_flac", "GPiano_sus_A3_v2_rr1_Player_flac", "GPiano_sus_A3_v3_rr1_Player_flac", "GPiano_sus_A3_v4_rr1_Player_flac" }, 58, 58, 59 },
         { "C4",  { "GPiano_sus_C4_v1_rr1_Player_flac",  "GPiano_sus_C4_v2_rr1_Player_flac",  "GPiano_sus_C4_v3_rr1_Player_flac",  "GPiano_sus_C4_v4_rr1_Player_flac"  }, 60, 60, 62 },
         { "E4",  { "GPiano_sus_E4_v1_rr1_Player_flac",  "GPiano_sus_E4_v2_rr1_Player_flac",  "GPiano_sus_E4_v3_rr1_Player_flac",  "GPiano_sus_E4_v4_rr1_Player_flac"  }, 64, 63, 66 },
-        { "G#4", { "GPiano_sus_G_4_v1_rr1_Player_flac", "GPiano_sus_G_4_v2_rr1_Player_flac", "GPiano_sus_G_4_v3_rr1_Player_flac", "GPiano_sus_G_4_v4_rr1_Player_flac" }, 68, 67, 127 }
+        { "G#4", { "GPiano_sus_G4_v1_rr1_Player_flac", "GPiano_sus_G4_v2_rr1_Player_flac", "GPiano_sus_G4_v3_rr1_Player_flac", "GPiano_sus_G4_v4_rr1_Player_flac" }, 68, 67, 127 }
     };
 
     pianoLoaded = true;
