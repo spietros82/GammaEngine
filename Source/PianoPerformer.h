@@ -10,6 +10,8 @@ public:
     enum class Gesture
     {
         Rest,
+        Single,
+        Dyad,
         Chord,
         Arpeggio
     };
@@ -47,25 +49,31 @@ private:
     double currentSampleRate = 48000.0;
     float energy = 0.5f;
     int currentChord = -1;
+    int samplesUntilNextGesture = 0;
+    int lastMelodicNote = -1;
 
     Gesture lastGesture = Gesture::Chord;
     int consecutiveRests = 0;
 
-    static constexpr int gestureHistorySize = 6;
+    static constexpr int gestureHistorySize = 8;
     std::array<Gesture, gestureHistorySize> gestureHistory {};
     int gestureHistoryCount = 0;
 
     int phrasePosition = 0;
-    int phraseLength = 5;
+    int phraseLength = 6;
     PhraseShape phraseShape = PhraseShape::Arch;
-    std::array<int, 3> previousVoicing { 60, 64, 67 };
-    bool hasPreviousVoicing = false;
 
-    std::array<int, 4> activeNotes { -1, -1, -1, -1 };
-    std::array<ScheduledNote, 4> scheduledNotes {};
+    std::array<int, 6> activeNotes { -1, -1, -1, -1, -1, -1 };
+    std::array<ScheduledNote, 6> scheduledNotes {};
 
+    void beginGesture(bool harmonicChange);
+    void scheduleNextGestureTime();
     Gesture chooseGesture();
-    std::array<int, 3> chooseVoicing(int chordIndex);
+    std::array<int, 3> chooseNotesForGesture(Gesture gesture);
+    int choosePaletteNote(bool preferChordTone, int avoidNote = -1);
+    bool isChordTone(int midiNote) const;
+    bool isScaleTone(int midiNote) const;
+
     void scheduleGesture(Gesture gesture, const std::array<int, 3>& notes);
     void stopActiveNotes();
     void clearSchedule();
