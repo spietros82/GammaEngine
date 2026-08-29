@@ -73,6 +73,8 @@ target_sources(GammaEngine
         Source/Conductor.h
         Source/PianoEngine.cpp
         Source/PianoEngine.h
+        Source/PianoPerformer.cpp
+        Source/PianoPerformer.h
 )
 
 target_compile_definitions(GammaEngine
